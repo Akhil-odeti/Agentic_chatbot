@@ -1,9 +1,9 @@
 # Agentic Chatbot: Web Research and Auto-Selected Charts
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
-![Chainlit](https://img.shields.io/badge/UI-Chainlit-ff4b8b)
-![LangChain](https://img.shields.io/badge/Agent-LangChain%20%2B%20LangGraph-1c3c3c)
-![Plotly](https://img.shields.io/badge/Charts-Plotly-3f4f75)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Chainlit](https://img.shields.io/badge/UI-Chainlit-ff4b8b)](https://chainlit.io)
+[![LangChain](https://img.shields.io/badge/Agent-LangChain%20%2B%20LangGraph-1c3c3c)](https://langchain-ai.github.io/langgraph/)
+[![Plotly](https://img.shields.io/badge/Charts-Plotly-3f4f75)](https://plotly.com/python/)
 
 <!-- Add a screenshot of the chat with a chart in the side panel: ![Demo](docs/demo.png) -->
 
