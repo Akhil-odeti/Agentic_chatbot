@@ -1,5 +1,9 @@
 
 
+https://github.com/user-attachments/assets/424040dd-c085-4b0e-b50f-0cf996c576f8
+
+
+
 # Agentic Chatbot: Web Research and Auto-Selected Charts
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
