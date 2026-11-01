@@ -1,11 +1,10 @@
+
 # Agentic Chatbot: Web Research and Auto-Selected Charts
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
-![Chainlit](https://img.shields.io/badge/UI-Chainlit-ff4b8b)
-![LangChain](https://img.shields.io/badge/Agent-LangChain%20%2B%20LangGraph-1c3c3c)
-![Plotly](https://img.shields.io/badge/Charts-Plotly-3f4f75)
-
-<!-- Add a screenshot of the chat with a chart in the side panel: ![Demo](docs/demo.png) -->
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Chainlit](https://img.shields.io/badge/UI-Chainlit-ff4b8b)](https://chainlit.io)
+[![LangChain](https://img.shields.io/badge/Agent-LangChain%20%2B%20LangGraph-1c3c3c)](https://langchain-ai.github.io/langgraph/)
+[![Plotly](https://img.shields.io/badge/Charts-Plotly-3f4f75)](https://plotly.com/python/)
 
 A chat assistant that can **search the web, read web pages and draw charts** from real data. It is built as an *agentic* system: instead of one prompt producing one answer, a main agent decides which tools to call, and a second, specialised agent decides which chart type fits your data.
 
@@ -216,6 +215,16 @@ chainlit run app.py -w
 Run it from inside this folder (Chainlit reads `.chainlit/config.toml` from the folder you start it in). Open <http://localhost:8000>, enter any name and your OpenAI API key (password field) on the login page, then start chatting. Use the settings icon next to the message box to choose the model.
 
 ---
+## Demo 
+https://github.com/user-attachments/assets/424040dd-c085-4b0e-b50f-0cf996c576f8
+
+### login images 
+<img width="1877" height="852" alt="image" src="https://github.com/user-attachments/assets/00483751-d4b1-454b-a5ec-1865fe0b95ab" />
+
+<img width="1913" height="1008" alt="image" src="https://github.com/user-attachments/assets/3760b3ae-ac09-49e6-8379-a9f6642707bd" />
+
+<img width="1363" height="768" alt="image" src="https://github.com/user-attachments/assets/45f58a02-a477-4a48-afcf-d3ad7a464ef7" />
+
 
 ## Example prompts
 
