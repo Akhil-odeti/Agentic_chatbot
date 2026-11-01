@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 import config
+from openai_models import uses_responses_api
 from tools import build_plan_charts, make_charts, scrape_url, web_search
 
 SYSTEM_PROMPT = f"""You are a helpful chat assistant that can also draw charts.
@@ -68,7 +69,8 @@ def build_agent(saver, api_key: str, model_name: str):
     never be reused for another user. The same model runs the chat agent, the history summariser
     and the chart-selector.
     """
-    llm = ChatOpenAI(model=model_name, api_key=api_key)
+    # Reasoning models (gpt-5*, o*) must use the Responses API when tools are used.
+    llm = ChatOpenAI(model=model_name, api_key=api_key, use_responses_api=uses_responses_api(model_name))
     return create_agent(
         model=llm,
         tools=[build_plan_charts(llm), make_charts, scrape_url, web_search],

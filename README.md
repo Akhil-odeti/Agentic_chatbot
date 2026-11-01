@@ -24,7 +24,7 @@ You can paste a table of numbers, ask a question that needs a web search, or sha
 - **No invented data:** every number in a chart must come from your messages or from search and scrape results.
 - **Chat history and memory:** multiple chats, each with its own memory. Long conversations are summarised automatically.
 - **Recolor and re-type:** ask for "make it red" or "show it as a line chart" and the chart is rebuilt.
-- **Bring your own key and model:** each user enters their own OpenAI API key in the app and picks the model from a dropdown of the models that key can use. The key is never stored on the server.
+- **Bring your own key and model:** each user signs in with their own OpenAI API key and picks the model from a dropdown of the models that key can use. Chat history belongs to the key, so the same key shows the same chats on every visit and in any browser. The key is never written to the database.
 
 ---
 
@@ -56,18 +56,22 @@ Drawing a chart is always a **two-step process**:
 
 ## Your API key and model
 
-Nothing is configured on the server for OpenAI. Each user brings their own key:
+Nothing is configured on the server for OpenAI. Each user signs in with their own key:
 
-1. **First visit:** the app shows a **Required API Keys** form. Paste your OpenAI API key (the field is masked) and save.
-2. **Model dropdown:** the app asks OpenAI which chat models your key can use and lists them in the chat settings (the settings icon next to the message box). Pick one at any time and it applies to your next message. The same model runs the chat agent and the chart-selector.
-3. **Per chat:** the model you pick is remembered for that chat and restored when you reopen it.
+1. **Sign in:** on the login page, type any name (it is only shown in the app) and paste your OpenAI API key in the **password** field. The app checks the key with OpenAI and signs you in.
+2. **Your history follows your key.** The same key always opens the same chat list, in any browser or on any computer. A different key sees different chats. You stay signed in for 15 days, so you do not enter the key again on each visit.
+3. **Model dropdown:** the app asks OpenAI which chat models your key can use and lists them in the chat settings (the settings icon next to the message box). Pick one at any time and it applies to your next message. The same model runs the chat agent and the chart-selector.
+4. **Per chat:** the model you pick is remembered for that chat and restored when you reopen it.
 
 How the key is handled:
 
-- It is saved only in your browser's local storage and sent to the app for your session. It is **not** written to the database, the memory files or the logs.
+- Your chat user id is a one-way hash of the key, so the database holds the hash and never the key. The key is **not** written to the database, the memory files, cookies or the logs.
+- While you are signed in, the server keeps the key in memory only. If the server restarts it forgets the key: open the profile menu, choose **Logout**, and sign in again with the same key. Your chats are still there.
 - It is used for your requests only. A fresh agent is built for every message, so a key can never be reused for another user.
 - Error messages shown in the chat never contain the key.
-- To change it, open the profile menu and choose **API Keys**. On a shared computer, also clear the site's data in your browser.
+- Anyone who has your key can open your history, so treat the key like a password. To switch keys, choose **Logout** and sign in with the other key.
+
+Upgrading from the shared-history version? Chats saved before this change belonged to one shared user called `local`. Stop the app and run `python migrate_local_history.py` once to give them to a key.
 
 ---
 
@@ -147,11 +151,13 @@ How the key is handled:
 ├── grounding.py         # Checks chart numbers exist in the conversation
 ├── insights.py          # Computes facts for the key insights
 ├── config.py            # Models, limits and storage paths
+├── key_auth.py          # Sign-in by OpenAI key: key -> user id, key held in server memory
+├── migrate_local_history.py # One-off: give pre-upgrade shared chats to a key
 ├── db_init.py           # Creates the chat history tables
 ├── local_storage.py     # Stores chart files locally
 ├── css_colors.py        # Valid CSS color names
 ├── public/chat.css      # UI styling
-├── .chainlit/config.toml # Chainlit settings, including the masked API key form
+├── .chainlit/config.toml # Chainlit settings (login page labels: .chainlit/translations/en-US.json)
 ├── .env.example         # Template for the server's keys
 └── requirements.txt
 ```
@@ -207,7 +213,7 @@ Never commit your `.env` file. It is already listed in `.gitignore`.
 chainlit run app.py -w
 ```
 
-Open <http://localhost:8000>. On your first visit, enter your OpenAI API key in the form that appears, then start chatting. Use the settings icon next to the message box to choose the model.
+Run it from inside this folder (Chainlit reads `.chainlit/config.toml` from the folder you start it in). Open <http://localhost:8000>, enter any name and your OpenAI API key (password field) on the login page, then start chatting. Use the settings icon next to the message box to choose the model.
 
 ---
 
@@ -249,7 +255,8 @@ Settings live in `config.py`:
 
 ## Limitations
 
-- **One shared identity.** It signs everyone in automatically as the same user, so all visitors share one chat history list. Visitors pay with their own OpenAI key, but do not host it publicly with private conversations in it. The Tavily and ScraperAPI keys in `.env` belong to the host, and every visitor can use them.
+- **History is per OpenAI key.** Anyone who has the key can open that history, so do not share keys. The server holds the key in memory only; after a server restart, log out and sign in again with the same key. Run a single server process (the key is held per process). The Tavily and ScraperAPI keys in `.env` belong to the host, and every signed-in user can use them.
+- Reasoning models (GPT-5 family, o-series) are called through OpenAI's Responses API, because OpenAI does not allow tools with reasoning on Chat Completions. GPT-4.x models use Chat Completions.
 - Charts only use numbers that appear in the conversation or in search and scrape results. If the data is missing, the assistant asks for it.
 - At most 3 charts are drawn per request (`MAX_CHARTS`).
 - Answers that rely on web search or scraping depend on the quality of the pages found.

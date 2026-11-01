@@ -1,6 +1,7 @@
 [project]
-# List of environment variables to be provided by each user to use the app.
-user_env = ["OPENAI_API_KEY"]
+# The OpenAI key is entered once on the login page (password field), not through Chainlit's
+# "API Keys" form, so no per-user environment variables are requested here.
+user_env = []
 
 # Duration (in seconds) during which the session is saved when the connection is lost
 session_timeout = 3600
@@ -118,9 +119,8 @@ name = "Assistant"
 
 # default_theme = "dark"
 
-# Force a specific language for all users (e.g., "en-US", "he-IL", "fr-FR")
-# If not set, the browser's language will be used
-# language = "en-US"
+# Force a specific language for all users. The sign-in labels below are edited in en-US only.
+language = "en-US"
 
 # layout = "wide"
 

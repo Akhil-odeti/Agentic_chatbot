@@ -1,4 +1,5 @@
-"""Chainlit UI: multi-chat history (thread UUIDs), per-chat agent memory, charts in the side panel."""
+"""Chainlit UI: sign in with your OpenAI key, per-key chat history (thread UUIDs), per-chat agent
+memory, charts in the side panel."""
 import chainlit as cl
 from chainlit.input_widget import Select
 import plotly.io as pio
@@ -7,6 +8,7 @@ from chainlit.types import ThreadDict
 from langchain_core.messages import AIMessageChunk, ToolMessage
 
 import config
+import key_auth
 from agent import build_agent, get_saver
 from db_init import init_chat_db
 from local_storage import LocalStorageClient
@@ -24,10 +26,26 @@ def data_layer():
     )
 
 
-@cl.header_auth_callback
-async def auto_login(headers) -> cl.User | None:
-    """Silent single-user login: no login screen, but Chainlit gets a user so chat history works."""
-    return cl.User(identifier="local", metadata={"role": "owner"})
+@cl.password_auth_callback
+async def sign_in(username: str, password: str) -> cl.User | None:
+    """The login form's password field takes the OpenAI API key. The key proves who the user is:
+    the same key always maps to the same user id, so its chat history comes back on every visit.
+    The username is only a display name. The key is checked with OpenAI, then kept in server
+    memory (key_auth) and never written to the database."""
+    key = (password or "").strip()
+    if not key_auth.looks_like_key(key):
+        return None
+    try:
+        await list_chat_models(key)
+    except KeyRejected:
+        return None  # OpenAI says the key is invalid
+    user_id = key_auth.identity_for(key)
+    key_auth.remember(user_id, key)
+    return cl.User(
+        identifier=user_id,
+        display_name=(username or "").strip() or "You",
+        metadata={"role": "user"},  # metadata is stored in the database: never put the key here
+    )
 
 
 def _plotly_elements(charts: list[dict]) -> list[cl.Plotly]:
@@ -38,10 +56,16 @@ def _plotly_elements(charts: list[dict]) -> list[cl.Plotly]:
 
 
 def _api_key() -> str:
-    """The key this user entered in Chainlit's "API Keys" form. It lives only in this browser
-    session (persist_user_env = false in .chainlit/config.toml), so it is never saved to the
-    database. Never copy it into cl.user_session: that is written to the database."""
-    return ((cl.user_session.get("env") or {}).get("OPENAI_API_KEY") or "").strip()
+    """The key this user signed in with, or "" if the server no longer holds it (it was restarted).
+    Never copy it into cl.user_session: that is written to the database."""
+    user = cl.user_session.get("user")
+    return key_auth.recall(getattr(user, "identifier", None))
+
+
+SIGN_IN_AGAIN = (
+    "The server no longer holds your OpenAI key (it was restarted). Open your profile menu, "
+    "choose Logout, then sign in again with the same key. Your chats are kept."
+)
 
 
 def _chosen_model() -> str | None:
@@ -62,8 +86,8 @@ async def _show_model_picker() -> tuple[str, bool]:
     except KeyRejected:
         key_ok, models = False, list(config.FALLBACK_MODELS)
         await cl.Message(
-            content="OpenAI rejected the API key you entered. Open your profile menu, choose "
-            "API Keys, enter a valid key and reload the page."
+            content="OpenAI rejected your API key. Open your profile menu, choose Logout and "
+            "sign in again with a valid key."
         ).send()
     model = pick_model(models, _chosen_model())
     await cl.ChatSettings(
@@ -82,6 +106,9 @@ async def _show_model_picker() -> tuple[str, bool]:
 
 @cl.on_chat_start
 async def on_start():
+    if not _api_key():
+        await cl.Message(content=SIGN_IN_AGAIN).send()
+        return
     model, key_ok = await _show_model_picker()
     if key_ok:
         await cl.Message(
@@ -95,6 +122,9 @@ async def on_resume(thread: ThreadDict):
     """Nothing to rebuild: messages and charts are loaded from the data layer, and the agent's
     memory is restored automatically because the thread_id is the same in the checkpointer.
     Only the model dropdown is shown again (the last model chosen in this chat is kept)."""
+    if not _api_key():
+        await cl.Message(content=SIGN_IN_AGAIN).send()
+        return
     await _show_model_picker()
 
 
@@ -104,8 +134,7 @@ async def on_message(message: cl.Message):
     key = _api_key()
     if not key:
         await cl.Message(
-            content="No OpenAI API key is set. Open your profile menu, choose API Keys, enter "
-            "your key and reload the page."
+            content=SIGN_IN_AGAIN
         ).send()
         return
     agent = build_agent(await get_saver(), key, _chosen_model() or config.DEFAULT_MODEL)
@@ -150,8 +179,11 @@ async def on_message(message: cl.Message):
                             steps_by_id[tc["id"]] = step
                     if tc.get("args") and idx in args_buf:
                         args_buf[idx] += tc["args"]
-                if isinstance(chunk.content, str) and chunk.content:
-                    await reply.stream_token(chunk.content)
+                # chunk.text is the plain text of this chunk. The Responses API returns content as a
+                # list of blocks (text, reasoning), so chunk.content is not always a string.
+                text = str(chunk.text)
+                if text:
+                    await reply.stream_token(text)
             elif isinstance(chunk, ToolMessage):
                 step = steps_by_id.get(chunk.tool_call_id)
                 if step is not None:

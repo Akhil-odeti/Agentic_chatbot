@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
-# The OpenAI key is NOT read from the server. Every user enters their own key in the UI
-# (Chainlit "user_env"). Drop any key left in .env or the shell so it can never be used silently.
+# The OpenAI key is NOT read from the server. Every user signs in with their own key (login page,
+# password field). Drop any key left in .env or the shell so it can never be used silently.
 os.environ.pop("OPENAI_API_KEY", None)
 
 # Models: the user picks one in the UI. The list comes from OpenAI (what THEIR key can use);
@@ -16,6 +16,9 @@ os.environ.pop("OPENAI_API_KEY", None)
 # and the chart-selector.
 DEFAULT_MODEL = "gpt-4.1-mini"
 FALLBACK_MODELS = ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini", "gpt-4o"]
+
+# How long a sign-in lasts (matches user_session_timeout in .chainlit/config.toml: 15 days).
+SESSION_SECONDS = 15 * 24 * 3600
 
 MAX_CHARTS = 3
 MAX_RETRIES = 3
